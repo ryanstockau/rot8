@@ -9,7 +9,7 @@ www.ryanstock.com.au
 */
 
  
- ;(function ( $, window, document, undefined ) {
+;(function ( $, window, document, undefined ) {
 	 
 	// Plugin Constructor
 	
@@ -203,7 +203,8 @@ www.ryanstock.com.au
 			
 		},
 		
-		_registerResizeHandler : function() {			
+		_registerResizeHandler : function() {	
+			var self = this;		
 			var resize_timeout = null;	
 			$(window).resize(function() {
 				if ( resize_timeout ) {
@@ -212,7 +213,7 @@ www.ryanstock.com.au
 				resize_timeout = setTimeout( function() {
 					resize_timeout = null;
 					self._resetContainerDimensions();
-				}, this.config.resetDelay );
+				}, self.config.resetDelay );
 			});
 		},
 		
