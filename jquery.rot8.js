@@ -69,7 +69,7 @@ www.ryanstock.com.au
 			duration : 2000,
 			delay : 0,
 			segments : 2,
-			retainHeight : true,
+			responsiveHeight : true,
 			heightRetainerHtml : '<div class="rot8-height-retainer"></div>'		
 		},
 		
@@ -82,6 +82,9 @@ www.ryanstock.com.au
 			
 			// Set combined config
 			self.config = $.extend({}, self.defaults, self.options, self.metadata);
+			
+			// Todo: needed?
+			self.panel_length = 360 / self.config.segments;
 			
 			// The $container is the element that rotates
 			self.$container = self.$elem.find(self.config.containerClass);			
@@ -98,9 +101,6 @@ www.ryanstock.com.au
 			self._setPrimaryPanel( self.$panels.eq(0) );
 			self._setSecondaryPanel( self.$panels.eq(1) );
 			
-			// Todo: needed?
-			self.panel_length = 360 / self.config.segments;
-			
 			// Extend $container out to ensure its edges don't get shown when we rotate
 			self._resetContainerDimensions();
 			
@@ -113,6 +113,21 @@ www.ryanstock.com.au
 		
 		// Main API
 		
+		// Add a panel to the $container
+		addPanel : function( content, position ) {
+			var self = this;
+			self.$container.append(content);
+			self._refreshElements();
+			self._resetContainerDimensions();
+		},
+		
+		// Rotate to a given panel element
+		animateToPanel : function( $panel, options ) {
+			var self = this;		
+			self._setSecondaryPanel( $panel );
+			return self._animateToSecondary( options );	
+		},
+		
 		// Rotate the $container and display the next panel
 		next : function( options ) {
 			var self = this;
@@ -120,16 +135,11 @@ www.ryanstock.com.au
 			if ( ! $next.length ) {
 				$next = self.$panels.not(self.$primary_panel).first();
 			}
-			self._setSecondaryPanel( $next );
-			return self._animateToSecondary( options );	
-		},
-		
-		// Add a panel to the $container
-		addPanel : function( content, position ) {
-			var self = this;
-			self.$container.append(content);
-			self._refreshElements();
-		},
+			if ( ! $next.length ) {
+				return false;
+			}
+			return self.animateToPanel( $next );
+		},		
 		
 		getContainer : function() {
 			var self = this;
@@ -143,7 +153,8 @@ www.ryanstock.com.au
 		
 		
 		// Methods
-				
+		
+		// Rotate the $container 180° to display the $secondary_panel where the $primary_panel was.
 		_animateToSecondary : function( options ) {
 			var self = this;
 			var config = $.extend(
@@ -155,7 +166,7 @@ www.ryanstock.com.au
 				duration: config.duration
 			};
 			var rotation_config = {
-				direction:config.direction
+				direction: config.direction
 			};
 			
 			var $animation_target = self.$container;
@@ -173,7 +184,7 @@ www.ryanstock.com.au
 				$parent.addClass('rot8-animating');
 				$parent.removeClass('rot8-delaying');
 				
-				var animation = $animation_target.animateRotation(angle, animation_config, rotation_config );
+				var animation = $animation_target.animateRotation(angle, animation_config, rotation_config);
 				animation.promise().done( function() {
 					self._resyncPanels();
 					self._resetContainerDimensions();
