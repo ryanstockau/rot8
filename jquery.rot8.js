@@ -6,31 +6,6 @@ www.github.com/ryanstockau/rot8
 
 www.ryanstock.com.au
 
-
-LICENSE
-
-The MIT License (MIT)
-
-Copyright (c) 2015 Ryan Stock
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
 */
 
  
@@ -87,7 +62,6 @@ SOFTWARE.
 		
 		defaults: {
 			segments : 2,
-			stageAttr : 'data-rot8-stage',
 			containerClass : '.rot8-container',
 			contentClass : '.rot8-content',
 			panelClass : '.rot8-panel',
@@ -100,6 +74,7 @@ SOFTWARE.
 		init: function() {
 			
 			var self = this;
+			self.$elem.data('rot8', self);
 			
 			self.config = $.extend({}, self.defaults, self.options, self.metadata);
 			
@@ -124,7 +99,6 @@ SOFTWARE.
 			
 			self.resetDimensions();
 			
-			self.$elem.data('rot8', self);
 			
 			
 			var resize_timeout = null;
@@ -199,21 +173,8 @@ SOFTWARE.
 				return $.error('animateRotation extension has not been loaded');	
 			}
 			
-			/*
-			var stage = self.$container.data(self.config.stageAttr) || 0;
-			var next_stage = stage + 1;
-			if ( next_stage >= self.config.segments ) {
-				next_stage = 0;	
-			}
-			
-			var angle = next_stage * self.panel_length;*/
-			
 			// because secondary is always next after current/primary, just animate one panel length
-			var angle = self.panel_length;
-			
-			// Store the current stage as data on the container
-			//self.$container.data(self.config.stageAttr, next_stage);
-			
+			var angle = self.panel_length;			
 			
 			var $deferred = $.Deferred();
 			var runAnimation = function() {
@@ -265,9 +226,6 @@ SOFTWARE.
 			self.$container.css('left', '50%');
 			self.$container.css('margin-left', (-(max_radius)) + 'px');
 			
-			console.log( 'self.panel_height', self.panel_height );
-			console.log( 'max_radius', max_radius );
-			
 			self.$container.css('top', ( self.panel_height - (max_radius) ) + 'px');
 			
 			self.$contents.css('width',self.panel_width);
@@ -277,12 +235,13 @@ SOFTWARE.
 		
 		refreshElements : function() {
 			var self = this;
+			
 			// Find all panels
 			self.$panels = self.$container.find(self.config.panelClass);
 			self.$contents = self.$container.find(self.config.contentClass);
 			
-			// Hide all panels
-			self.$panels.addClass('hidden');
+			// Hide all panels not in use
+			self.$panels.not('.primary, .secondary').addClass('hidden');
 		},
 		
 		resetRotation : function() {
@@ -295,39 +254,11 @@ SOFTWARE.
 		resetPanels : function() {
 			var self = this;
 			self.switchPanels();
-			self.resetRotation();
-			
-			
-			
-			/*
-			var config = $.extend(
-				{},
-				self.config,
-				options
-			);
-			var animation_config = {
-				duration: 0
-			};
-			var rotation_config = {
-				direction:config.direction
-			};
-			var $animation_target = self.$container;
-			var $parent = self.$elem;
-			
-			var stage = self.$container.data(self.config.stageAttr) || 0;
-			var angle = stage * self.panel_length;
-			
-			var animation = $animation_target.animateRotation(angle, animation_config, rotation_config );*/
-			
+			self.resetRotation();			
 		},
 		
 		resetRetainerHeight : function() {
 			var self = this;
-			console.log( 'resetRetainerHeight()' );
-			console.log( this.$primary_panel );
-			//console.log( this.$primary_panel.find(self.config.contentClass).outerHeight() );
-			
-			//self.$container.css('height', (self.panel_max_height * 8 ) +'px');
 			var height = this.$primary_panel.find(self.config.contentClass).outerHeight();
 			
 			self.$height_retainer.height( height );		
