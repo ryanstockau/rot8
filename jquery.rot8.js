@@ -61,98 +61,90 @@ www.ryanstock.com.au
 	Rot8.prototype = {
 		
 		defaults: {
-			segments : 2,
 			containerClass : '.rot8-container',
 			contentClass : '.rot8-content',
 			panelClass : '.rot8-panel',
 			direction : 'cw',
+			resetDelay : 500,
 			duration : 2000,
 			delay : 0,
-			retainHeight : true			
+			segments : 2,
+			retainHeight : true,
+			heightRetainerHtml : '<div class="rot8-height-retainer"></div>'		
 		},
 		
 		init: function() {
 			
 			var self = this;
+			
+			// Add a data reference to this object
 			self.$elem.data('rot8', self);
 			
+			// Set combined config
 			self.config = $.extend({}, self.defaults, self.options, self.metadata);
 			
+			// The $container is the element that rotates
 			self.$container = self.$elem.find(self.config.containerClass);			
-		//	self.$content = self.$container.find(self.config.contentClass);	
+			//	self.$content = self.$container.find(self.config.contentClass);	
 			
-			
-			self.$height_retainer = $('<div class="rot8-height-retainer"></div>');
+			// Create a height retainer to ensure the $container doesn't collapse
+			self.$height_retainer = $(self.config.heightRetainerHtml);
 			self.$elem.prepend( self.$height_retainer );
 			
-			self.refreshElements();
-			
+			// 
+			self._refreshElements();			
 			
 			// Set initial primary/secondary panels based on their positions in the DOM
-			self.setPrimaryPanel( self.$panels.eq(0) );
-			self.setSecondaryPanel( self.$panels.eq(1) );
+			self._setPrimaryPanel( self.$panels.eq(0) );
+			self._setSecondaryPanel( self.$panels.eq(1) );
 			
 			// Todo: needed?
 			self.panel_length = 360 / self.config.segments;
 			
-			//self.panel_max_height = getMaxHeight( this.$panels );
+			// Extend $container out to ensure its edges don't get shown when we rotate
+			self._resetContainerDimensions();
 			
-			self.resetDimensions();
-			
-			
-			
-			var resize_timeout = null;
-			
-			// Handlers
-			$(window).resize(function() {
-				if ( resize_timeout ) {
-					clearInterval(resize_timeout);	
-				}
-				resize_timeout = setTimeout( function() {
-					resize_timeout = null;
-					self.resetDimensions();
-				}, 500 );
-			});
+			// When we resize the screen, reset dimensions
+			self._registerResizeHandler();			
 			
 			return self;
 		},	
 		
-		setPrimaryPanel : function( $panel ) {
-			var self = this;
-			if ( self.$primary_panel ) {
-				self.$primary_panel.removeClass('primary').addClass('hidden');
-			}
-			self.$primary_panel = $panel;
-			if ( $panel.is( self.$secondary_panel ) ) {
-				self.$secondary_panel = null;	
-			}
-			//self.resetRetainerHeight();
-			self.$primary_panel.removeClass('hidden secondary').addClass('primary');				
-		},
 		
-		setSecondaryPanel : function( $panel ) {
-			var self = this;
-			if ( self.$secondary_panel ) {
-				self.$secondary_panel.removeClass('secondary').addClass('hidden');
-			}
-			if ( $panel.is( self.$primary_panel ) ) {
-				self.$primary_panel = null;	
-			}
-			self.$secondary_panel = $panel;
-			self.$secondary_panel.removeClass('hidden primary').addClass('secondary');				
-		},
+		// Main API
 		
+		// Rotate the $container and display the next panel
 		next : function( options ) {
 			var self = this;
 			var $next = self.$primary_panel.next();
 			if ( ! $next.length ) {
 				$next = self.$panels.not(self.$primary_panel).first();
 			}
-			self.setSecondaryPanel( $next );
-			return self.animateToSecondary( options );	
+			self._setSecondaryPanel( $next );
+			return self._animateToSecondary( options );	
 		},
 		
-		animateToSecondary : function( options ) {
+		// Add a panel to the $container
+		addPanel : function( content, position ) {
+			var self = this;
+			self.$container.append(content);
+			self._refreshElements();
+		},
+		
+		getContainer : function() {
+			var self = this;
+			return self.$container;
+		},
+		
+		getContent : function() {
+			var self = this;
+			return self.$content;
+		},
+		
+		
+		// Methods
+				
+		_animateToSecondary : function( options ) {
 			var self = this;
 			var config = $.extend(
 				{},
@@ -183,8 +175,8 @@ www.ryanstock.com.au
 				
 				var animation = $animation_target.animateRotation(angle, animation_config, rotation_config );
 				animation.promise().done( function() {
-					self.resetPanels();
-					self.resetDimensions();
+					self._resyncPanels();
+					self._resetContainerDimensions();
 					$parent.removeClass('rot8-animating rot8-running');
 					$deferred.resolve();
 				});
@@ -200,21 +192,24 @@ www.ryanstock.com.au
 			
 		},
 		
-		switchPanels : function() {
-			var self = this;
-			var $primary = self.$primary_panel;
-			var $secondary = self.$secondary_panel;
-			
-			self.setPrimaryPanel( $secondary );
-			self.setSecondaryPanel( $primary );
+		_registerResizeHandler : function() {			
+			var resize_timeout = null;	
+			$(window).resize(function() {
+				if ( resize_timeout ) {
+					clearInterval(resize_timeout);	
+				}
+				resize_timeout = setTimeout( function() {
+					resize_timeout = null;
+					self._resetContainerDimensions();
+				}, this.config.resetDelay );
+			});
 		},
 		
-		resetDimensions : function() {
+		_resetContainerDimensions : function() {
 			var self = this;
-			self.resetRetainerHeight();
+			self._resetRetainerHeight();
 			
-			self.panel_width = self.$elem.outerWidth();
-			
+			self.panel_width = self.$elem.outerWidth();			
 			self.panel_height = self.$primary_panel.find(self.config.contentClass).outerHeight();
 			
 			var max_width = getMaxOuterWidth( self.$contents );
@@ -230,10 +225,9 @@ www.ryanstock.com.au
 			
 			self.$contents.css('width',self.panel_width);
 			self.$contents.css('margin-left',-self.panel_width/2);
-			
 		},	
 		
-		refreshElements : function() {
+		_refreshElements : function() {
 			var self = this;
 			
 			// Find all panels
@@ -244,41 +238,64 @@ www.ryanstock.com.au
 			self.$panels.not('.primary, .secondary').addClass('hidden');
 		},
 		
-		resetRotation : function() {
-			var self = this;
-			var $container = self.$container;
-			var animation = $container.animateRotation(0, {duration:0} );
-			return animation.promise();
-		},
-		
-		resetPanels : function() {
-			var self = this;
-			self.switchPanels();
-			self.resetRotation();			
-		},
-		
-		resetRetainerHeight : function() {
+		// Ensure the $container doesn't collapse by setting the retainer to the same height as the current panel.
+		_resetRetainerHeight : function() {
 			var self = this;
 			var height = this.$primary_panel.find(self.config.contentClass).outerHeight();
 			
 			self.$height_retainer.height( height );		
 		},
 		
-		addPanel : function( content ) {
+		_resetRotation : function() {
 			var self = this;
-			self.$container.append(content);
-			self.refreshElements();
+			var $container = self.$container;
+			var animation = $container.animateRotation(0, {duration:0} );
+			return animation.promise();
 		},
 		
-		getContainer : function() {
+		// If we've rotated 180°, rotate again and switch the panels around so there's no visual difference.
+		_resyncPanels : function() {
 			var self = this;
-			return self.$container;
+			self._switchPanels();
+			self._resetRotation();			
 		},
 		
-		getContent : function() {
+		// Set a panel to the primary. Used when we resync the rotation.
+		_setPrimaryPanel : function( $panel ) {
 			var self = this;
-			return self.$content;
-		}
+			if ( self.$primary_panel ) {
+				self.$primary_panel.removeClass('primary').addClass('hidden');
+			}
+			self.$primary_panel = $panel;
+			if ( $panel.is( self.$secondary_panel ) ) {
+				self.$secondary_panel = null;	
+			}
+			//self._resetRetainerHeight();
+			self.$primary_panel.removeClass('hidden secondary').addClass('primary');				
+		},
+		
+		// Set a panel to the primary. Used when we resync the rotation.
+		_setSecondaryPanel : function( $panel ) {
+			var self = this;
+			if ( self.$secondary_panel ) {
+				self.$secondary_panel.removeClass('secondary').addClass('hidden');
+			}
+			if ( $panel.is( self.$primary_panel ) ) {
+				self.$primary_panel = null;	
+			}
+			self.$secondary_panel = $panel;
+			self.$secondary_panel.removeClass('hidden primary').addClass('secondary');				
+		},
+		
+		_switchPanels : function() {
+			var self = this;
+			var $primary = self.$primary_panel;
+			var $secondary = self.$secondary_panel;
+			
+			self._setPrimaryPanel( $secondary );
+			self._setSecondaryPanel( $primary );
+		},
+		
 		
 	}
 	
