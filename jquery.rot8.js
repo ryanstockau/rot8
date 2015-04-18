@@ -105,7 +105,9 @@ www.ryanstock.com.au
 			self._resetContainerDimensions();
 			
 			// When we resize the screen, reset dimensions
-			self._registerResizeHandler();			
+			self._registerResizeHandler();
+			
+			self.$elem.addClass('rot8-ready');	
 			
 			return self;
 		},	
